@@ -1,0 +1,85 @@
+##24082022
+
+#====INITIALISATION====#
+
+
+processors * * *
+
+units		lj
+atom_style	sph
+boundary 	p p p
+
+
+region 			box block 0 50 0 50 0 50 units lattice
+create_box		2 box
+
+## ------------- System definition ------------- ###
+
+region			water cylinder z 20 20 10 INF INF
+
+create_atoms	1 random 10000 	341341 water			#create 10000 atoms of type 1 in the region "water"
+create_atoms	2 random 1 		127569 water			#create 150 atoms of type 2 in the region "mycylin"
+
+
+
+### ------------- Simulation settings ------------- ###
+mass			1 18										###attribute a mass of 18 (unitless) to atoms of type 1 
+mass			2 60										###attribute a mass of 60 (unitless) to atoms of type 2 
+
+
+
+group			water 		type 1
+group			particle 	type 2
+
+
+variable 			h 	equal 0.03
+variable 			c 	equal 10.0 				# soundspeed for Tait's EOS
+variable 			dt 	equal 0.1*${h}/${c} 	# upper limit of timestep based on CFL-like criterion
+
+
+
+
+pair_style 			hybrid/overlay sph/taitwater/morris sph/rhosum 100 lj/cut ${h}
+pair_coeff			* * sph/taitwater/morris 1000.0 ${c} 1.0e-3 ${h}  # use target density of 1000, soundspeed ${c} for Tait's EOS
+pair_coeff 			* * sph/rhosum ${h}
+pair_coeff 			* * lj/cut 0.005 ${h}
+
+
+
+
+neigh_modify	every 5 delay 0 check yes
+
+
+
+
+# time-integrate position, velocities, internal energy and density of inserted particles and water
+fix             fix1 all sph
+
+fix 			gfix particle gravity -9.81 vector 0 0 1 		# add gravity. This fix also computes potential energy of mass in gravity field.
+
+#fix 			ID 		group-ID 	drag 	x 	y 	z 	fmag 	delta
+#fix 			dragfix particle drag 0 0 200 100 0 
+
+compute            rho_peratom all sph/rho/atom
+compute            e_peratom all sph/e/atom
+compute            esph all reduce sum c_e_peratom
+compute            ke all ke
+variable           etot equal c_esph+c_ke+f_gfix
+
+
+
+# adjust nevery | min. allowed dt | max. allowed dt | max. travel distance per dt # // ${dt} ~= CFL criterion 0.1*h/c
+fix dtfix all dt/reset 1 NULL ${dt} 0.005 units box # use a variable timestep
+
+
+
+
+dump 				dump_id1 all custom 100 combined.lammpstrj id type xs ys zs c_rho_peratom c_e_peratom fx fy fz
+dump 				dump_id2 all xyz 100 combined.xyz
+dump_modify 		dump_id1 first yes
+thermo 				100
+thermo_style 		custom step ke c_esph v_etot f_gfix press time f_dtfix
+thermo_modify 		norm no
+
+timestep 			0.005
+run 				10000
