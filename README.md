@@ -1,5 +1,10 @@
 # lammps-sph_1
 
+<img width="701" height="160" alt="image" src="https://github.com/user-attachments/assets/6bb261bb-01d7-4b96-8a0f-ecf6b3395452" />
+
+<img width="716" height="467" alt="image" src="https://github.com/user-attachments/assets/ecd0eebc-2f0f-4458-9329-2d5dcd0260e3" />  
+
+
 ## references  
 LAMMPS - Particle and fluid interaction - SPH - LAMMPS / LAMMPS General Discussion - Materials Science Community Discourse  
 https://matsci.org/t/lammps-particle-and-fluid-interaction-sph/44222
